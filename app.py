@@ -1,8 +1,13 @@
 import jwt
 from datetime import datetime
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
+
+@app.route('/')
+def index():
+    """Serve the main JWT decoder frontend"""
+    return render_template('index.html')
 
 def decode_jwt(token):
     try:
@@ -35,4 +40,4 @@ def api_decode_jwt():
         return jsonify({"error": "Token is required"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8080)
