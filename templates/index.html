@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder - Professional Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="logo-text">JWT Decoder</span>
+                </div>
+                <nav class="header-nav">
+                    <a href="#" class="nav-link active">Decoder</a>
+                    <a href="https://jwt.io" target="_blank" class="nav-link">Documentation</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="content-wrapper">
+                <!-- Hero Section -->
+                <section class="hero">
+                    <h1 class="hero-title">Decode JWT Tokens Instantly</h1>
+                    <p class="hero-subtitle">Secure, client-side JWT decoding with detailed token inspection</p>
+                </section>
+
+                <!-- Decoder Section -->
+                <section class="decoder-section">
+                    <div class="input-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Enter Your JWT Token</h2>
+                            <div class="card-actions">
+                                <button class="btn btn-secondary" id="pasteBtn">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M16 4H18C19.1046 4 20 4.89543 20 6V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V6C4 4.89543 4.89543 4 6 4H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <rect x="8" y="2" width="8" height="4" rx="1" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    Paste
+                                </button>
+                                <button class="btn btn-secondary" id="clearBtn">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div class="input-wrapper">
+                            <textarea 
+                                id="tokenInput" 
+                                class="token-input" 
+                                placeholder="Paste your JWT token here (e.g., eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)"
+                                rows="4"
+                            ></textarea>
+                            <div class="input-hint">
+                                <svg class="hint-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <circle cx="12" cy="8" r="1" fill="currentColor"/>
+                                </svg>
+                                <span>JWT tokens consist of three parts separated by dots: header.payload.signature</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-large" id="decodeBtn">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            Decode Token
+                        </button>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div class="results-container" id="resultsContainer" style="display: none;">
+                        <!-- Token Status -->
+                        <div class="status-card" id="statusCard">
+                            <div class="status-indicator" id="statusIndicator"></div>
+                            <div class="status-content">
+                                <h3 class="status-title" id="statusTitle">Token Valid</h3>
+                                <p class="status-description" id="statusDescription">This token is valid and has not expired</p>
+                            </div>
+                        </div>
+
+                        <!-- Token Parts -->
+                        <div class="token-parts">
+                            <div class="part-card">
+                                <div class="part-header">
+                                    <span class="part-label">Header</span>
+                                    <span class="part-badge">Base64Url</span>
+                                </div>
+                                <pre class="part-content" id="headerContent"><code></code></pre>
+                            </div>
+
+                            <div class="part-card">
+                                <div class="part-header">
+                                    <span class="part-label">Payload</span>
+                                    <span class="part-badge">Base64Url</span>
+                                </div>
+                                <pre class="part-content" id="payloadContent"><code></code></pre>
+                            </div>
+
+                            <div class="part-card">
+                                <div class="part-header">
+                                    <span class="part-label">Signature</span>
+                                    <span class="part-badge">Base64Url</span>
+                                </div>
+                                <pre class="part-content" id="signatureContent"><code></code></pre>
+                            </div>
+                        </div>
+
+                        <!-- Decoded Claims -->
+                        <div class="claims-card">
+                            <div class="card-header">
+                                <h3 class="card-title">Decoded Claims</h3>
+                                <button class="btn btn-secondary btn-small" id="copyClaimsBtn">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    Copy JSON
+                                </button>
+                            </div>
+                            <div class="claims-content">
+                                <pre class="json-display" id="jsonDisplay"><code></code></pre>
+                            </div>
+                        </div>
+
+                        <!-- Token Info -->
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Algorithm</span>
+                                    <span class="info-value" id="algorithmValue">-</span>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M16 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M8 2V6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M3 10H21" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Expires At</span>
+                                    <span class="info-value" id="expiresValue">-</span>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Time Until Expiry</span>
+                                    <span class="info-value" id="expiryCountdown">-</span>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.40097 5.48976C5.80473 3.84322 7.70526 2.68453 9.82004 2.18522C11.9348 1.68592 14.1512 1.87273 16.16 2.72" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Token Status</span>
+                                    <span class="info-value status-badge" id="tokenStatus">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div class="error-message" id="errorMessage" style="display: none;">
+                        <div class="error-content">
+                            <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                                <path d="M15 9L9 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                <path d="M9 9L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                            <div>
+                                <h4 class="error-title">Invalid Token</h4>
+                                <p class="error-description" id="errorDescription">The provided JWT token is invalid or malformed</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 JWT Decoder. All decoding happens client-side for security.</p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Privacy</a>
+                    <a href="#" class="footer-link">Terms</a>
+                    <a href="https://github.com" target="_blank" class="footer-link">GitHub</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
