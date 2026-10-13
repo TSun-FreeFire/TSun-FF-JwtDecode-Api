@@ -79,6 +79,11 @@ body {
     min-height: 100vh;
 }
 
+/* Visibility helper (results / error cards) */
+.is-hidden {
+    display: none !important;
+}
+
 /* App Container */
 .app-container {
     display: flex;
@@ -203,7 +208,8 @@ body {
 
 /* Cards */
 .input-card,
-.claims-card {
+.claims-card,
+.api-card {
     background: var(--color-white);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-lg);
@@ -369,6 +375,11 @@ body {
     border-color: var(--color-error);
 }
 
+.status-card.unknown {
+    background: var(--color-warning-bg);
+    border-color: var(--color-warning);
+}
+
 .status-indicator {
     width: 12px;
     height: 12px;
@@ -386,8 +397,14 @@ body {
     box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
 }
 
+.status-card.unknown .status-indicator {
+    background: var(--color-warning);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+}
+
 .status-content {
     flex: 1;
+    min-width: 0;
 }
 
 .status-title {
@@ -400,6 +417,7 @@ body {
 .status-description {
     font-size: 0.875rem;
     color: var(--color-gray-600);
+    overflow-wrap: anywhere;
 }
 
 /* Token Parts */
@@ -410,6 +428,7 @@ body {
 }
 
 .part-card {
+    min-width: 0;
     background: var(--color-gray-50);
     border: 1px solid var(--color-gray-200);
     border-radius: var(--radius-lg);
@@ -457,7 +476,8 @@ body {
     line-height: 1.6;
     color: var(--color-gray-700);
     white-space: pre-wrap;
-    word-break: break-all;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 /* Claims Card */
@@ -480,7 +500,8 @@ body {
     line-height: 1.6;
     color: var(--color-gray-100);
     white-space: pre-wrap;
-    word-break: break-all;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 /* Syntax Highlighting */
@@ -493,7 +514,7 @@ body {
 /* Info Grid */
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--spacing-md);
 }
 
@@ -528,6 +549,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xs);
+    min-width: 0;
 }
 
 .info-label {
@@ -542,6 +564,7 @@ body {
     font-size: 0.9375rem;
     font-weight: 600;
     color: var(--color-gray-900);
+    overflow-wrap: anywhere;
 }
 
 .status-badge {
@@ -559,6 +582,54 @@ body {
 .status-badge.expired {
     background: var(--color-error-bg);
     color: var(--color-error);
+}
+
+.status-badge.unknown {
+    background: var(--color-warning-bg);
+    color: #b45309;
+}
+
+/* REST API Card */
+.api-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.api-hint {
+    font-size: 0.8125rem;
+    color: var(--color-gray-600);
+    overflow-wrap: anywhere;
+}
+
+.api-hint code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: var(--color-gray-100);
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    padding: 0 0.25rem;
+    color: var(--color-gray-800);
+}
+
+.api-endpoint {
+    margin: 0;
+    padding: var(--spacing-md);
+    background: var(--color-gray-900);
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.api-endpoint code {
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: #7dd3fc;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 /* Error Message */
@@ -639,6 +710,12 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+    .info-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
     .header-content {
         padding: var(--spacing-md);
@@ -692,6 +769,35 @@ body {
     
     .footer-links {
         justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .token-parts .part-card,
+    .info-card {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-content {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+
+    .header-nav {
+        gap: var(--spacing-md);
+    }
+
+    .nav-link {
+        font-size: 0.875rem;
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+    }
+
+    .card-actions {
+        flex-wrap: wrap;
     }
 }
 

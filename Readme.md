@@ -42,7 +42,9 @@ Ideal for developers testing, debugging, or learning how JWT payloads work.
 |   🧩  | **Decode JWTs Instantly** | Extract payload data from any token without validation |
 |   🕒  | **Readable Time Format**  | Converts UNIX timestamps to human-readable UTC time    |
 |   🧠  | **Expiration Check**      | Detects expired tokens automatically                   |
-|   🧰  | **REST API**              | Simple `/decode_jwt` endpoint for programmatic use     |
+|   🧰  | **REST API**              | `GET /decode_jwt?token=...` endpoint for programmatic use |
+|   🖥️  | **Field by Field Output** | Header, payload, signature, claims and token info each in their own field |
+|   🧪  | **Hardened API**          | JSON errors with correct status codes, malformed claims are reported instead of crashing |
 |   🌍  | **Cross-Platform**        | Runs anywhere Flask and Python 3 are supported         |
 
 ---
@@ -83,37 +85,107 @@ Run the Flask server:
 python app.py
 ```
 
-Then open your browser:
+Then open the web UI in your browser:
 
 ```bash
-http://127.0.0.1:5000/decode_jwt?token=YOUR_JWT_TOKEN
+http://127.0.0.1:8080/
 ```
 
-Example Response:
+Or call the REST API directly:
 
-```json
-{
-  "sub": "1234567890",
-  "name": "John Doe",
-  "iat": "2025-11-02 14:23:00",
-  "exp": "2025-11-03 14:23:00",
-  "expired": false
-}
+```bash
+http://127.0.0.1:8080/decode_jwt?token=YOUR_JWT_TOKEN
 ```
+
+> The Docker / VPS deployment serves the very same application on port `8078`
+> (see `docker-compose.yml` and `setup-domain-in-vps.sh`).
 
 ---
 
 ## 🧑‍💻 API Reference
 
-| Method | Endpoint      | Parameter | Description             |
-| :----: | :------------ | :-------- | :---------------------- |
-|   GET  | `/decode_jwt` | `token`   | The JWT token to decode |
+### `GET /decode_jwt`
 
-Example:
+| Method | Endpoint      | Parameter | Description                                     |
+| :----: | :------------ | :-------- | :---------------------------------------------- |
+|   GET  | `/decode_jwt` | `token`   | The JWT token to decode (query parameter)       |
+|  POST  | `/decode_jwt` | `token`   | Same, as JSON/form body (for very long JWTs)    |
 
+The token may also be sent in an `Authorization: Bearer <jwt>` header.
+Whitespace, line breaks and a leading `Bearer ` prefix are ignored.
+
+Examples:
+
+```bash
+curl "http://127.0.0.1:8080/decode_jwt?token=<your_token_here>"
+
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"token":"<your_token_here>"}' \
+     "http://127.0.0.1:8080/decode_jwt"
 ```
-GET /decode_jwt?token=<your_token_here>
+
+Example response:
+
+```json
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "iat": 1516239022,
+  "issued_at": "2018-01-18 01:30:22",
+  "exp": "2018-01-18 02:30:22",
+  "expires_at": "2018-01-18T02:30:22Z",
+  "expired": true
+}
 ```
+
+| Field               | Description                                                                     |
+| :------------------ | :------------------------------------------------------------------------------ |
+| *(every claim)*     | All claims of the token, in their original order                                |
+| `exp`               | The `exp` claim converted to `YYYY-MM-DD HH:MM:SS` (UTC)                        |
+| `expires_at`        | The same instant as RFC 3339 / ISO 8601                                         |
+| `expired`           | `true` / `false`, or `null` when `exp` is not a valid unix timestamp            |
+| `issued_at`         | Readable version of `iat` (the numeric `iat` claim is kept as is)               |
+| `not_before`        | Readable version of `nbf` (the numeric `nbf` claim is kept as is)              |
+| `lock_region_time`  | Converted to a readable UTC date (FreeFire specific)                            |
+| `expiry_warning`    | Only when `exp` exists but is not a valid timestamp                             |
+| `signature_warning` | Only when the signature segment is malformed; header/payload are decoded anyway  |
+
+### Status codes
+
+| Code | Meaning                                                                         |
+| :--: | :------------------------------------------------------------------------------ |
+| 200  | Token decoded                                                                   |
+| 400  | Token missing, malformed, or the payload is not a JSON object                   |
+| 413  | Token longer than 16 KiB                                                        |
+| 500  | Unexpected server error (always JSON, never an HTML error page)                 |
+
+Error responses always have the same shape:
+
+```json
+{
+  "error": "Invalid token",
+  "details": "A JWT must have exactly 3 dot-separated parts (header.payload.signature), got 2."
+}
+```
+
+`Access-Control-Allow-Origin: *` is returned on the API routes, so the endpoint can
+be consumed from any browser application.
+
+### `GET /health`
+
+Liveness probe used by Docker and Nginx:
+`{"status": "ok", "service": "tsun-ff-jwtdecode-api"}`.
+
+---
+
+## 🧪 Tests
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+33 tests cover the API: valid, expired, malformed and edge-case tokens (string /
+boolean / huge timestamps), CORS, error handling and the health endpoint.
 
 ---
 

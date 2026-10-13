@@ -1,94 +1,184 @@
 /**
  * JWT Decoder - Professional Frontend JavaScript
- * Handles JWT token decoding with client-side processing
+ *
+ * Decodes JWT tokens in the browser and renders every piece of the token in
+ * its own field: header, payload, signature, claims and token info.
  */
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
+    'use strict';
+
+    var byId = function (id) {
+        return document.getElementById(id);
+    };
+
+    // Field that contains a <code> child (falls back to the element itself).
+    var codeOf = function (id) {
+        var el = byId(id);
+        if (!el) {
+            return null;
+        }
+        return el.querySelector('code') || el;
+    };
+
     // DOM Elements
-    const tokenInput = document.getElementById('tokenInput');
-    const decodeBtn = document.getElementById('decodeBtn');
-    const pasteBtn = document.getElementById('pasteBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const copyClaimsBtn = document.getElementById('copyClaimsBtn');
-    const resultsContainer = document.getElementById('resultsContainer');
-    const errorMessage = document.getElementById('errorMessage');
-    
+    var tokenInput = byId('tokenInput');
+    var decodeBtn = byId('decodeBtn');
+    var pasteBtn = byId('pasteBtn');
+    var clearBtn = byId('clearBtn');
+    var copyClaimsBtn = byId('copyClaimsBtn');
+    var copyApiBtn = byId('copyApiBtn');
+    var openApiLink = byId('openApiLink');
+    var resultsContainer = byId('resultsContainer');
+    var errorMessage = byId('errorMessage');
+
     // Result display elements
-    const statusCard = document.getElementById('statusCard');
-    const statusIndicator = document.getElementById('statusIndicator');
-    const statusTitle = document.getElementById('statusTitle');
-    const statusDescription = document.getElementById('statusDescription');
-    const headerContent = document.getElementById('headerContent').querySelector('code');
-    const payloadContent = document.getElementById('payloadContent').querySelector('code');
-    const signatureContent = document.getElementById('signatureContent').querySelector('code');
-    const jsonDisplay = document.getElementById('jsonDisplay').querySelector('code');
-    const algorithmValue = document.getElementById('algorithmValue');
-    const expiresValue = document.getElementById('expiresValue');
-    const expiryCountdown = document.getElementById('expiryCountdown');
-    const tokenStatus = document.getElementById('tokenStatus');
-    const errorDescription = document.getElementById('errorDescription');
-    
-    let countdownInterval = null;
-    
+    var statusCard = byId('statusCard');
+    var statusTitle = byId('statusTitle');
+    var statusDescription = byId('statusDescription');
+    var headerField = codeOf('headerContent');
+    var payloadField = codeOf('payloadContent');
+    var signatureField = codeOf('signatureContent');
+    var claimsField = codeOf('jsonDisplay');
+    var algorithmValue = byId('algorithmValue');
+    var tokenTypeValue = byId('tokenTypeValue');
+    var issuedAtValue = byId('issuedAtValue');
+    var expiresValue = byId('expiresValue');
+    var expiryCountdown = byId('expiryCountdown');
+    var tokenStatus = byId('tokenStatus');
+    var apiUrlField = byId('apiUrl');
+    var errorDescription = byId('errorDescription');
+
+    var countdownInterval = null;
+    var lastApiUrl = '';
+
+    var DASH = '\u2014';
+
     /**
-     * Base64URL decode function
+     * Base64URL decode (works with unicode payloads).
      */
     function base64UrlDecode(str) {
-        // Replace non-url compatible chars
-        let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
-        
-        // Pad with '=' if needed
+        var base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+
         while (base64.length % 4) {
             base64 += '=';
         }
-        
+
+        var binary;
         try {
-            // Decode and handle unicode characters
-            return decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
+            binary = atob(base64);
         } catch (e) {
-            throw new Error('Invalid Base64URL encoding');
+            throw new Error('the token contains an invalid Base64URL segment');
         }
+
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+
+        if (typeof TextDecoder === 'function') {
+            return new TextDecoder('utf-8').decode(bytes);
+        }
+
+        // Fallback for very old browsers.
+        var encoded = '';
+        for (var j = 0; j < bytes.length; j++) {
+            encoded += '%' + ('00' + bytes[j].toString(16)).slice(-2);
+        }
+        return decodeURIComponent(encoded);
     }
-    
+
     /**
-     * Parse JWT token into its components
+     * Parse a JWT token into its components.
      */
     function parseJWT(token) {
-        const parts = token.trim().split('.');
-        
+        // Tokens are often pasted with line breaks or surrounding spaces.
+        var cleaned = token.replace(/\s+/g, '');
+
+        if (cleaned.toLowerCase().indexOf('bearer') === 0) {
+            cleaned = cleaned.slice(6);
+        }
+
+        if (!cleaned) {
+            throw new Error('Please enter a JWT token');
+        }
+
+        var parts = cleaned.split('.');
+
+        if (parts.length === 5) {
+            throw new Error('This looks like an encrypted JWT (JWE, 5 parts) - only signed tokens can be decoded');
+        }
+
         if (parts.length !== 3) {
-            throw new Error('Invalid JWT format: must have 3 parts separated by dots');
+            throw new Error('Invalid JWT format: expected 3 parts separated by dots, found ' + parts.length);
         }
-        
-        const [headerB64, payloadB64, signature] = parts;
-        
-        if (!headerB64 || !payloadB64) {
-            throw new Error('Invalid JWT: header or payload is empty');
+
+        if (!parts[0] || !parts[1]) {
+            throw new Error('Invalid JWT: the header or the payload segment is empty');
         }
-        
+
+        var header;
+        var payload;
+
         try {
-            const header = JSON.parse(base64UrlDecode(headerB64));
-            const payload = JSON.parse(base64UrlDecode(payloadB64));
-            
-            return {
-                header,
-                payload,
-                signature,
-                headerB64,
-                payloadB64
-            };
+            header = JSON.parse(base64UrlDecode(parts[0]));
         } catch (e) {
-            throw new Error('Invalid JWT: ' + e.message);
+            throw new Error('Invalid header: ' + e.message);
         }
+
+        try {
+            payload = JSON.parse(base64UrlDecode(parts[1]));
+        } catch (e) {
+            throw new Error('Invalid payload: ' + e.message);
+        }
+
+        if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) {
+            throw new Error('Invalid JWT: the payload must be a JSON object');
+        }
+
+        return {
+            header: header,
+            payload: payload,
+            signature: parts[2],
+            headerB64: parts[0],
+            payloadB64: parts[1]
+        };
     }
-    
+
     /**
-     * Format date for display
+     * Convert a claim into a usable unix timestamp (numbers or numeric strings).
+     * Returns null when the value is not a sane timestamp.
+     */
+    function toTimestamp(value) {
+        var numeric;
+
+        if (typeof value === 'number') {
+            numeric = value;
+        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(Number(value))) {
+            numeric = Number(value);
+        } else {
+            return null;
+        }
+
+        if (!isFinite(numeric)) {
+            return null;
+        }
+
+        var date = new Date(numeric * 1000);
+        var year = date.getUTCFullYear();
+
+        if (isNaN(date.getTime()) || year < 1970 || year > 3000) {
+            return null;
+        }
+
+        return numeric;
+    }
+
+    /**
+     * Format a unix timestamp for display.
      */
     function formatDate(timestamp) {
-        const date = new Date(timestamp * 1000);
+        var date = new Date(timestamp * 1000);
         return date.toLocaleString('en-US', {
             year: 'numeric',
             month: 'short',
@@ -99,75 +189,79 @@ document.addEventListener('DOMContentLoaded', function() {
             timeZoneName: 'short'
         });
     }
-    
+
     /**
-     * Calculate time until expiry
+     * UTC representation, used as tooltip so local/UTC cannot be confused.
+     */
+    function formatUtc(timestamp) {
+        return new Date(timestamp * 1000).toISOString().replace('.000Z', 'Z');
+    }
+
+    /**
+     * Human readable "time until expiry" string.
      */
     function getTimeUntilExpiry(expTimestamp) {
-        const now = Math.floor(Date.now() / 1000);
-        const diff = expTimestamp - now;
-        
+        var diff = expTimestamp - Math.floor(Date.now() / 1000);
+
         if (diff <= 0) {
             return 'Expired';
         }
-        
-        const days = Math.floor(diff / (24 * 60 * 60));
-        const hours = Math.floor((diff % (24 * 60 * 60)) / (60 * 60));
-        const minutes = Math.floor((diff % (60 * 60)) / 60);
-        const seconds = diff % 60;
-        
+
+        var days = Math.floor(diff / 86400);
+        var hours = Math.floor((diff % 86400) / 3600);
+        var minutes = Math.floor((diff % 3600) / 60);
+        var seconds = diff % 60;
+
         if (days > 0) {
-            return `${days}d ${hours}h ${minutes}m`;
-        } else if (hours > 0) {
-            return `${hours}h ${minutes}m ${seconds}s`;
-        } else if (minutes > 0) {
-            return `${minutes}m ${seconds}s`;
-        } else {
-            return `${seconds}s`;
+            return days + 'd ' + hours + 'h ' + minutes + 'm';
         }
+        if (hours > 0) {
+            return hours + 'h ' + minutes + 'm ' + seconds + 's';
+        }
+        if (minutes > 0) {
+            return minutes + 'm ' + seconds + 's';
+        }
+        return seconds + 's';
     }
-    
+
     /**
-     * Update expiry countdown timer
+     * Update the expiry countdown every second.
      */
     function updateCountdown(expTimestamp) {
         if (countdownInterval) {
             clearInterval(countdownInterval);
+            countdownInterval = null;
         }
-        
+
         function update() {
-            const countdown = getTimeUntilExpiry(expTimestamp);
+            var countdown = getTimeUntilExpiry(expTimestamp);
             expiryCountdown.textContent = countdown;
-            
+
             if (countdown === 'Expired') {
                 clearInterval(countdownInterval);
-                updateTokenStatus(false);
+                countdownInterval = null;
+                updateTokenStatus('expired');
             }
         }
-        
+
         update();
         countdownInterval = setInterval(update, 1000);
     }
-    
+
     /**
-     * Syntax highlight JSON
+     * Syntax highlight a JSON string (HTML escaped first).
      */
     function syntaxHighlightJSON(json) {
         if (typeof json !== 'string') {
             json = JSON.stringify(json, undefined, 2);
         }
-        
-        // Escape HTML characters
+
         json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        
+
         return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-            let cls = 'json-number';
+            var cls = 'json-number';
             if (/^"/.test(match)) {
-                if (/:$/.test(match)) {
-                    cls = 'json-key';
-                } else {
-                    cls = 'json-string';
-                }
+                cls = /:$/.test(match) ? 'json-key' : 'json-string';
             } else if (/true|false/.test(match)) {
                 cls = 'json-boolean';
             } else if (/null/.test(match)) {
@@ -176,197 +270,261 @@ document.addEventListener('DOMContentLoaded', function() {
             return '<span class="' + cls + '">' + match + '</span>';
         });
     }
-    
+
     /**
-     * Update token status display
+     * Update the status card and the "Token Status" field.
+     * state: 'valid' | 'expired' | 'unknown'
      */
-    function updateTokenStatus(isValid) {
-        statusCard.className = 'status-card ' + (isValid ? 'valid' : 'expired');
-        tokenStatus.className = 'info-value status-badge ' + (isValid ? 'valid' : 'expired');
-        
-        if (isValid) {
+    function updateTokenStatus(state) {
+        statusCard.className = 'status-card ' + state;
+        tokenStatus.className = 'info-value status-badge ' + state;
+
+        if (state === 'valid') {
             statusTitle.textContent = 'Token Valid';
             statusDescription.textContent = 'This token is valid and has not expired';
             tokenStatus.textContent = 'Active';
-        } else {
+        } else if (state === 'expired') {
             statusTitle.textContent = 'Token Expired';
             statusDescription.textContent = 'This token has expired and is no longer valid';
             tokenStatus.textContent = 'Expired';
+        } else {
+            statusTitle.textContent = 'Token Decoded';
+            statusDescription.textContent = 'No valid "exp" claim found, the expiration cannot be checked';
+            tokenStatus.textContent = 'Unknown';
         }
     }
-    
+
     /**
-     * Display decoded JWT results
+     * Build the API URL for the current token and show it in its own field.
      */
-    function displayResults(jwtData) {
-        const { header, payload, signature, headerB64, payloadB64 } = jwtData;
-        
-        // Show results container
-        resultsContainer.style.display = 'flex';
-        errorMessage.style.display = 'none';
-        
-        // Display token parts
-        headerContent.textContent = JSON.stringify(header, null, 2);
-        payloadContent.textContent = JSON.stringify(payload, null, 2);
-        signatureContent.textContent = signature.substring(0, 50) + (signature.length > 50 ? '...' : '');
-        
-        // Display full JSON with syntax highlighting
-        jsonDisplay.innerHTML = syntaxHighlightJSON(JSON.stringify(payload, null, 2));
-        
-        // Display algorithm
-        algorithmValue.textContent = header.alg || 'N/A';
-        
-        // Check expiration
-        const expTimestamp = payload.exp;
-        const now = Math.floor(Date.now() / 1000);
-        const isValid = !expTimestamp || expTimestamp > now;
-        
-        // Update status
-        updateTokenStatus(isValid);
-        
-        // Display expiration info
-        if (expTimestamp) {
-            expiresValue.textContent = formatDate(expTimestamp);
-            updateCountdown(expTimestamp);
-        } else {
-            expiresValue.textContent = 'No expiration';
-            expiryCountdown.textContent = 'N/A';
+    function updateApiField(token) {
+        lastApiUrl = window.location.origin + '/decode_jwt?token=' + encodeURIComponent(token);
+
+        if (apiUrlField) {
+            apiUrlField.textContent = lastApiUrl;
         }
-        
-        // Scroll to results
+        if (openApiLink) {
+            openApiLink.href = lastApiUrl;
+        }
+    }
+
+    /**
+     * Display the decoded token. Every value goes into its own field.
+     */
+    function displayResults(jwtData, rawToken) {
+        var header = jwtData.header;
+        var payload = jwtData.payload;
+        var signature = jwtData.signature;
+
+        resultsContainer.classList.remove('is-hidden');
+        errorMessage.classList.add('is-hidden');
+
+        // --- token parts, one field each --------------------------------- #
+        headerField.textContent = JSON.stringify(header, null, 2);
+        payloadField.textContent = JSON.stringify(payload, null, 2);
+        signatureField.textContent = signature ? signature : '(empty signature)';
+        signatureField.title = signature ? signature : '';
+
+        // --- decoded claims --------------------------------------------- #
+        claimsField.innerHTML = syntaxHighlightJSON(JSON.stringify(payload, null, 2));
+
+        // --- token info -------------------------------------------------- #
+        algorithmValue.textContent = header.alg || 'N/A';
+        tokenTypeValue.textContent = header.typ || 'N/A';
+
+        var issuedTimestamp = toTimestamp(payload.iat);
+        if (issuedTimestamp !== null) {
+            issuedAtValue.textContent = formatDate(issuedTimestamp);
+            issuedAtValue.title = 'UTC: ' + formatUtc(issuedTimestamp);
+        } else {
+            issuedAtValue.textContent = 'No issued time';
+            issuedAtValue.title = '';
+        }
+
+        var expTimestamp = toTimestamp(payload.exp);
+        var hasExpClaim = Object.prototype.hasOwnProperty.call(payload, 'exp');
+
+        if (expTimestamp !== null) {
+            expiresValue.textContent = formatDate(expTimestamp);
+            expiresValue.title = 'UTC: ' + formatUtc(expTimestamp);
+            updateCountdown(expTimestamp);
+            updateTokenStatus(expTimestamp > Math.floor(Date.now() / 1000) ? 'valid' : 'expired');
+        } else {
+            expiresValue.textContent = hasExpClaim ? 'Invalid "exp" claim' : 'No expiration';
+            expiresValue.title = '';
+            expiryCountdown.textContent = hasExpClaim ? DASH : 'N/A';
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            updateTokenStatus('unknown');
+        }
+
+        // --- REST API field --------------------------------------------- #
+        updateApiField(rawToken);
+
         resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     /**
-     * Display error message
+     * Display an error message and hide the results.
      */
     function displayError(message) {
-        resultsContainer.style.display = 'none';
-        errorMessage.style.display = 'block';
+        resultsContainer.classList.add('is-hidden');
+        errorMessage.classList.remove('is-hidden');
         errorDescription.textContent = message;
-        
+
         if (countdownInterval) {
             clearInterval(countdownInterval);
             countdownInterval = null;
         }
     }
-    
+
     /**
-     * Hide all messages
+     * Hide results and errors.
      */
     function hideMessages() {
-        resultsContainer.style.display = 'none';
-        errorMessage.style.display = 'none';
-        
+        resultsContainer.classList.add('is-hidden');
+        errorMessage.classList.add('is-hidden');
+
         if (countdownInterval) {
             clearInterval(countdownInterval);
             countdownInterval = null;
         }
     }
-    
+
     /**
-     * Decode JWT token
+     * Decode the token currently in the input.
      */
     function decodeToken() {
-        const token = tokenInput.value.trim();
-        
+        var token = tokenInput.value.trim();
+
         if (!token) {
             displayError('Please enter a JWT token');
             return;
         }
-        
+
         try {
-            const jwtData = parseJWT(token);
-            displayResults(jwtData);
+            var jwtData = parseJWT(token);
+            displayResults(jwtData, token);
         } catch (e) {
             displayError(e.message);
         }
     }
-    
+
     /**
-     * Copy claims to clipboard
+     * Copy arbitrary text and flash a short confirmation on the button.
      */
-    async function copyClaims() {
-        const token = tokenInput.value.trim();
-        
+    function copyText(text, button, originalText) {
+        function done() {
+            button.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Copied!';
+            setTimeout(function () {
+                button.innerHTML = originalText;
+            }, 2000);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function () {
+                console.error('Failed to copy to clipboard');
+            });
+            return;
+        }
+
+        // Fallback for browsers without the async clipboard API.
+        var helper = document.createElement('textarea');
+        helper.value = text;
+        helper.setAttribute('readonly', 'readonly');
+        helper.style.position = 'absolute';
+        helper.style.left = '-9999px';
+        document.body.appendChild(helper);
+        helper.select();
+        try {
+            document.execCommand('copy');
+            done();
+        } catch (e) {
+            console.error('Failed to copy to clipboard', e);
+        }
+        document.body.removeChild(helper);
+    }
+
+    /**
+     * Copy the decoded claims.
+     */
+    function copyClaims() {
+        var token = tokenInput.value.trim();
+
         if (!token) {
             return;
         }
-        
+
         try {
-            const jwtData = parseJWT(token);
-            const text = JSON.stringify(jwtData.payload, null, 2);
-            
-            await navigator.clipboard.writeText(text);
-            
-            // Show temporary success feedback
-            const originalText = copyClaimsBtn.innerHTML;
-            copyClaimsBtn.innerHTML = `
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.40097 5.48976C5.80473 3.84322 7.70526 2.68453 9.82004 2.18522C11.9348 1.68592 14.1512 1.87273 16.16 2.72" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                Copied!
-            `;
-            
-            setTimeout(() => {
-                copyClaimsBtn.innerHTML = originalText;
-            }, 2000);
+            var jwtData = parseJWT(token);
+            copyText(JSON.stringify(jwtData.payload, null, 2), copyClaimsBtn, copyClaimsBtn.innerHTML);
         } catch (e) {
-            console.error('Failed to copy:', e);
+            console.error('Failed to copy claims:', e.message);
         }
     }
-    
+
     /**
-     * Paste from clipboard
+     * Copy the REST API URL of the current token.
      */
-    async function pasteFromClipboard() {
-        try {
-            const text = await navigator.clipboard.readText();
+    function copyApiUrl() {
+        if (!lastApiUrl) {
+            return;
+        }
+        copyText(lastApiUrl, copyApiBtn, copyApiBtn.innerHTML);
+    }
+
+    /**
+     * Paste from the clipboard.
+     */
+    function pasteFromClipboard() {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+            tokenInput.focus();
+            return;
+        }
+
+        navigator.clipboard.readText().then(function (text) {
             tokenInput.value = text.trim();
             hideMessages();
             tokenInput.focus();
-        } catch (e) {
+            if (tokenInput.value) {
+                decodeToken();
+            }
+        }).catch(function (e) {
             console.error('Failed to paste:', e);
-            // Fallback: select the input for manual paste
-            tokenInput.select();
-            document.execCommand('paste');
-        }
+            tokenInput.focus();
+        });
     }
-    
+
     /**
-     * Clear input and results
+     * Clear the input and the results.
      */
     function clearAll() {
         tokenInput.value = '';
         hideMessages();
         tokenInput.focus();
     }
-    
-    // Event Listeners
+
+    // Event listeners
     decodeBtn.addEventListener('click', decodeToken);
     pasteBtn.addEventListener('click', pasteFromClipboard);
     clearBtn.addEventListener('click', clearAll);
     copyClaimsBtn.addEventListener('click', copyClaims);
-    
-    // Allow Enter key to trigger decode (with Ctrl/Cmd)
-    tokenInput.addEventListener('keydown', function(e) {
+    copyApiBtn.addEventListener('click', copyApiUrl);
+
+    // Ctrl/Cmd + Enter decodes, a plain Enter keeps its default behaviour.
+    tokenInput.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
             decodeToken();
         }
     });
-    
-    // Auto-hide error when user starts typing
-    tokenInput.addEventListener('input', function() {
-        if (errorMessage.style.display !== 'none') {
+
+    // Hide the error as soon as the user edits the token again.
+    tokenInput.addEventListener('input', function () {
+        if (!errorMessage.classList.contains('is-hidden')) {
             hideMessages();
         }
     });
-    
-    // Sample token for testing (optional - can be removed)
-    // Uncomment to add a sample token button
-    /*
-    const sampleToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-    */
 });

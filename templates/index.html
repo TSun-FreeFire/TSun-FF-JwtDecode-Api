@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Decode FreeFire JWT tokens instantly - header, payload, signature, claims and expiry in separate fields.">
     <title>JWT Decoder - Professional Tool</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +25,8 @@
                 </div>
                 <nav class="header-nav">
                     <a href="#" class="nav-link active">Decoder</a>
-                    <a href="https://jwt.io" target="_blank" class="nav-link">Documentation</a>
+                    <a href="#apiCard" class="nav-link">REST API</a>
+                    <a href="https://jwt.io" target="_blank" rel="noopener" class="nav-link">Documentation</a>
                 </nav>
             </div>
         </header>
@@ -44,14 +46,14 @@
                         <div class="card-header">
                             <h2 class="card-title">Enter Your JWT Token</h2>
                             <div class="card-actions">
-                                <button class="btn btn-secondary" id="pasteBtn">
+                                <button class="btn btn-secondary" id="pasteBtn" type="button">
                                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M16 4H18C19.1046 4 20 4.89543 20 6V20C20 21.1046 19.1046 22 18 22H6C4.89543 22 4 21.1046 4 20V6C4 4.89543 4.89543 4 6 4H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                         <rect x="8" y="2" width="8" height="4" rx="1" stroke="currentColor" stroke-width="2"/>
                                     </svg>
                                     Paste
                                 </button>
-                                <button class="btn btn-secondary" id="clearBtn">
+                                <button class="btn btn-secondary" id="clearBtn" type="button">
                                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                         <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -61,11 +63,15 @@
                             </div>
                         </div>
                         <div class="input-wrapper">
-                            <textarea 
-                                id="tokenInput" 
-                                class="token-input" 
+                            <textarea
+                                id="tokenInput"
+                                class="token-input"
                                 placeholder="Paste your JWT token here (e.g., eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)"
                                 rows="4"
+                                spellcheck="false"
+                                autocomplete="off"
+                                autocapitalize="off"
+                                aria-label="JWT token"
                             ></textarea>
                             <div class="input-hint">
                                 <svg class="hint-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -76,7 +82,7 @@
                                 <span>JWT tokens consist of three parts separated by dots: header.payload.signature</span>
                             </div>
                         </div>
-                        <button class="btn btn-primary btn-large" id="decodeBtn">
+                        <button class="btn btn-primary btn-large" id="decodeBtn" type="button">
                             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
@@ -85,7 +91,7 @@
                     </div>
 
                     <!-- Results Section -->
-                    <div class="results-container" id="resultsContainer" style="display: none;">
+                    <div class="results-container is-hidden" id="resultsContainer" aria-live="polite">
                         <!-- Token Status -->
                         <div class="status-card" id="statusCard">
                             <div class="status-indicator" id="statusIndicator"></div>
@@ -95,12 +101,12 @@
                             </div>
                         </div>
 
-                        <!-- Token Parts -->
+                        <!-- Token parts: each part of the token has its own field -->
                         <div class="token-parts">
                             <div class="part-card">
                                 <div class="part-header">
                                     <span class="part-label">Header</span>
-                                    <span class="part-badge">Base64Url</span>
+                                    <span class="part-badge">Decoded JSON</span>
                                 </div>
                                 <pre class="part-content" id="headerContent"><code></code></pre>
                             </div>
@@ -108,7 +114,7 @@
                             <div class="part-card">
                                 <div class="part-header">
                                     <span class="part-label">Payload</span>
-                                    <span class="part-badge">Base64Url</span>
+                                    <span class="part-badge">Decoded JSON</span>
                                 </div>
                                 <pre class="part-content" id="payloadContent"><code></code></pre>
                             </div>
@@ -126,7 +132,7 @@
                         <div class="claims-card">
                             <div class="card-header">
                                 <h3 class="card-title">Decoded Claims</h3>
-                                <button class="btn btn-secondary btn-small" id="copyClaimsBtn">
+                                <button class="btn btn-secondary btn-small" id="copyClaimsBtn" type="button">
                                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                         <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
                                         <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" stroke-width="2"/>
@@ -139,8 +145,35 @@
                             </div>
                         </div>
 
-                        <!-- Token Info -->
+                        <!-- Token Info: every value has its own field -->
                         <div class="info-grid">
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4 7H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M4 12H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        <path d="M4 17H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Algorithm</span>
+                                    <span class="info-value" id="algorithmValue">-</span>
+                                </div>
+                            </div>
+
+                            <div class="info-card">
+                                <div class="info-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </div>
+                                <div class="info-content">
+                                    <span class="info-label">Token Type</span>
+                                    <span class="info-value" id="tokenTypeValue">-</span>
+                                </div>
+                            </div>
+
                             <div class="info-card">
                                 <div class="info-icon">
                                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -149,8 +182,8 @@
                                     </svg>
                                 </div>
                                 <div class="info-content">
-                                    <span class="info-label">Algorithm</span>
-                                    <span class="info-value" id="algorithmValue">-</span>
+                                    <span class="info-label">Issued At</span>
+                                    <span class="info-value" id="issuedAtValue">-</span>
                                 </div>
                             </div>
 
@@ -195,10 +228,37 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- REST API: the decoded token is also available from the API -->
+                        <div class="api-card" id="apiCard">
+                            <div class="card-header">
+                                <h3 class="card-title">Decode with the REST API</h3>
+                                <div class="card-actions">
+                                    <button class="btn btn-secondary btn-small" id="copyApiBtn" type="button">
+                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                                            <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" stroke-width="2"/>
+                                        </svg>
+                                        Copy URL
+                                    </button>
+                                    <a class="btn btn-secondary btn-small" id="openApiLink" href="#" target="_blank" rel="noopener">
+                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M18 13V19C18 20.1046 17.1046 21 16 21H5C3.89543 21 3 20.1046 3 19V8C3 6.89543 3.89543 6 5 6H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M15 3H21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                            <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        Open JSON
+                                    </a>
+                                </div>
+                            </div>
+                            <p class="api-hint">The very same token can be decoded programmatically:</p>
+                            <pre class="api-endpoint"><code id="apiUrl">GET /decode_jwt?token=...</code></pre>
+                            <p class="api-hint">Response fields: every claim, plus <code>expired</code>, <code>expires_at</code>, <code>issued_at</code> and <code>not_before</code>.</p>
+                        </div>
                     </div>
 
                     <!-- Error Message -->
-                    <div class="error-message" id="errorMessage" style="display: none;">
+                    <div class="error-message is-hidden" id="errorMessage" role="alert">
                         <div class="error-content">
                             <svg class="error-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
@@ -220,9 +280,10 @@
             <div class="footer-content">
                 <p>&copy; 2024 JWT Decoder. All decoding happens client-side for security.</p>
                 <div class="footer-links">
+                    <a href="#apiCard" class="footer-link">REST API</a>
                     <a href="#" class="footer-link">Privacy</a>
                     <a href="#" class="footer-link">Terms</a>
-                    <a href="https://github.com" target="_blank" class="footer-link">GitHub</a>
+                    <a href="https://github.com/TSun-FreeFire/TSun-FF-JwtDecode-Api" target="_blank" rel="noopener" class="footer-link">GitHub</a>
                 </div>
             </div>
         </footer>
