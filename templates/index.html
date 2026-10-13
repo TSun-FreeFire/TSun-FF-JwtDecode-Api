@@ -229,32 +229,6 @@
                             </div>
                         </div>
 
-                        <!-- REST API: the decoded token is also available from the API -->
-                        <div class="api-card" id="apiCard">
-                            <div class="card-header">
-                                <h3 class="card-title">Decode with the REST API</h3>
-                                <div class="card-actions">
-                                    <button class="btn btn-secondary btn-small" id="copyApiBtn" type="button">
-                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
-                                            <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" stroke-width="2"/>
-                                        </svg>
-                                        Copy URL
-                                    </button>
-                                    <a class="btn btn-secondary btn-small" id="openApiLink" href="#" target="_blank" rel="noopener">
-                                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M18 13V19C18 20.1046 17.1046 21 16 21H5C3.89543 21 3 20.1046 3 19V8C3 6.89543 3.89543 6 5 6H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M15 3H21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                            <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        Open JSON
-                                    </a>
-                                </div>
-                            </div>
-                            <p class="api-hint">The very same token can be decoded programmatically:</p>
-                            <pre class="api-endpoint"><code id="apiUrl">GET /decode_jwt?token=...</code></pre>
-                            <p class="api-hint">Response fields: every claim, plus <code>expired</code>, <code>expires_at</code>, <code>issued_at</code> and <code>not_before</code>.</p>
-                        </div>
                     </div>
 
                     <!-- Error Message -->
@@ -271,6 +245,33 @@
                             </div>
                         </div>
                     </div>
+                    <!-- REST API: always visible so the endpoint can be discovered -->
+                    <div class="api-card" id="apiCard">
+                        <div class="card-header">
+                            <h3 class="card-title">Decode with the REST API</h3>
+                            <div class="card-actions is-hidden" id="apiActions">
+                                <button class="btn btn-secondary btn-small" id="copyApiBtn" type="button">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M5 15H4C2.89543 15 2 14.1046 2 13V4C2 2.89543 2.89543 2 4 2H13C14.1046 2 15 2.89543 15 4V5" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                    Copy URL
+                                </button>
+                                <a class="btn btn-secondary btn-small" id="openApiLink" href="#" target="_blank" rel="noopener">
+                                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M18 13V19C18 20.1046 17.1046 21 16 21H5C3.89543 21 3 20.1046 3 19V8C3 6.89543 3.89543 6 5 6H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M15 3H21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    Open JSON
+                                </a>
+                            </div>
+                        </div>
+                        <p class="api-hint">The very same token can be decoded programmatically:</p>
+                        <pre class="api-endpoint"><code id="apiUrl">GET /decode_jwt?token=YOUR_JWT_TOKEN</code></pre>
+                        <p class="api-hint">Response fields: every claim, plus <code>expired</code>, <code>expires_at</code>, <code>issued_at</code> and <code>not_before</code>.</p>
+                    </div>
+
                 </section>
             </div>
         </main>

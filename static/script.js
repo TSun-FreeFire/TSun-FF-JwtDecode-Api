@@ -47,12 +47,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var expiryCountdown = byId('expiryCountdown');
     var tokenStatus = byId('tokenStatus');
     var apiUrlField = byId('apiUrl');
+    var apiActions = byId('apiActions');
     var errorDescription = byId('errorDescription');
 
     var countdownInterval = null;
     var lastApiUrl = '';
 
     var DASH = '\u2014';
+    var API_PLACEHOLDER = 'GET /decode_jwt?token=YOUR_JWT_TOKEN';
 
     /**
      * Base64URL decode (works with unicode payloads).
@@ -304,7 +306,27 @@ document.addEventListener('DOMContentLoaded', function () {
             apiUrlField.textContent = lastApiUrl;
         }
         if (openApiLink) {
-            openApiLink.href = lastApiUrl;
+            openApiLink.setAttribute('href', lastApiUrl);
+        }
+        if (apiActions) {
+            apiActions.classList.remove('is-hidden');
+        }
+    }
+
+    /**
+     * Put the API field back to its generic example (no token decoded yet).
+     */
+    function resetApiField() {
+        lastApiUrl = '';
+
+        if (apiUrlField) {
+            apiUrlField.textContent = API_PLACEHOLDER;
+        }
+        if (openApiLink) {
+            openApiLink.setAttribute('href', '#');
+        }
+        if (apiActions) {
+            apiActions.classList.add('is-hidden');
         }
     }
 
@@ -373,6 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
         resultsContainer.classList.add('is-hidden');
         errorMessage.classList.remove('is-hidden');
         errorDescription.textContent = message;
+        resetApiField();
 
         if (countdownInterval) {
             clearInterval(countdownInterval);
@@ -386,6 +409,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function hideMessages() {
         resultsContainer.classList.add('is-hidden');
         errorMessage.classList.add('is-hidden');
+        resetApiField();
 
         if (countdownInterval) {
             clearInterval(countdownInterval);

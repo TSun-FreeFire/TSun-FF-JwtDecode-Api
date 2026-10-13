@@ -181,11 +181,15 @@ Liveness probe used by Docker and Nginx:
 ## 🧪 Tests
 
 ```bash
-python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v      # 33 API tests (stdlib unittest)
+node tests/widget_test.js                    # 34 frontend checks (no browser needed)
 ```
 
-33 tests cover the API: valid, expired, malformed and edge-case tokens (string /
+The API suite covers valid, expired, malformed and edge-case tokens (string /
 boolean / huge timestamps), CORS, error handling and the health endpoint.
+The widget suite runs `static/script.js` against a tiny DOM stub and asserts that
+the header, payload, signature, claims and token info fields each receive their
+own value.
 
 ---
 
