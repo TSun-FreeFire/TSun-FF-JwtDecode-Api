@@ -193,6 +193,30 @@ own value.
 
 ---
 
+## 🎨 Icons
+
+The favicon set is generated from the very same "layers" mark the header logo
+uses, drawn in the brand colour `#6366f1` (`--color-primary`) on a rounded tile,
+so the browser tab and the site share one identity:
+
+| File                          | Use                                   |
+| :---------------------------- | :------------------------------------ |
+| `static/favicon.svg`          | Modern browsers (vector, any size)    |
+| `static/favicon.ico`          | Legacy browsers, pinned tabs (16/32/48) |
+| `static/favicon-16/32x32.png` | PNG fallbacks                         |
+| `static/apple-touch-icon.png` | iOS home screen (180 px, full bleed)  |
+| `static/android-chrome-*.png` | Android / PWA (192 and 512 px)        |
+| `static/site.webmanifest`     | Install metadata and `theme-color`    |
+
+Regenerate them after a brand change (Pillow is a build time dependency only):
+
+```bash
+python -m pip install Pillow
+python tools/generate_favicons.py
+```
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome!

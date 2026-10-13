@@ -37,7 +37,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 import jwt
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 app = Flask(__name__)
@@ -317,6 +317,21 @@ def index():
 def health():
     """Liveness probe (used by the Docker healthcheck and Nginx)."""
     return jsonify({"status": "ok", "service": "tsun-ff-jwtdecode-api"})
+
+
+@app.route("/favicon.ico")
+def favicon():
+    """Serve /favicon.ico.
+
+    Browsers, feed readers and crawlers request the icon at the site root even
+    when the page links to it, so it is routed explicitly (and cached).
+    """
+    return send_from_directory(
+        app.static_folder,
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+        max_age=604800,
+    )
 
 
 @app.route("/decode_jwt", methods=["GET", "POST", "OPTIONS"])

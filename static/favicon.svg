@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="JWT Decoder">
+    <title>JWT Decoder</title>
+    <rect width="64" height="64" rx="14" fill="#6366f1"/>
+    <g fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" transform="translate(11 11) scale(1.75)">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z"/>
+        <path d="M2 12L12 17L22 12"/>
+        <path d="M2 17L12 22L22 17"/>
+    </g>
+</svg>

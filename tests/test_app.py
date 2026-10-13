@@ -245,3 +245,49 @@ class RequestHandlingTests(ApiTestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class FaviconTests(ApiTestCase):
+    """The favicon set must be linked, served and readable."""
+
+    def test_favicon_ico_is_served_at_the_site_root(self):
+        response = self.client.get("/favicon.ico")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "image/vnd.microsoft.icon")
+        # ICONDIR: reserved=0, type=1 (icon), image count
+        self.assertEqual(response.data[:4], b"\x00\x00\x01\x00")
+        self.assertIn("max-age=604800", response.headers.get("Cache-Control", ""))
+
+    def test_favicon_svg_uses_the_brand_colour(self):
+        response = self.client.get("/static/favicon.svg")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("image/svg+xml", response.headers["Content-Type"])
+        body = response.get_data(as_text=True)
+        self.assertIn("#6366f1", body)  # var(--color-primary)
+        self.assertIn("M12 2L2 7L12 12L22 7L12 2Z", body)  # header logo mark
+
+    def test_png_icons_and_manifest_are_served(self):
+        expected = {
+            "/static/favicon-16x16.png": "image/png",
+            "/static/favicon-32x32.png": "image/png",
+            "/static/apple-touch-icon.png": "image/png",
+            "/static/android-chrome-192x192.png": "image/png",
+            "/static/site.webmanifest": "application/manifest+json",
+        }
+        for path, content_type in expected.items():
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(content_type, response.headers["Content-Type"])
+
+    def test_index_links_the_icon_set(self):
+        html = self.client.get("/").get_data(as_text=True)
+        for needle in (
+            'rel="icon" type="image/svg+xml"',
+            'rel="icon" href="/favicon.ico" sizes="any"',
+            'rel="apple-touch-icon" sizes="180x180"',
+            'rel="manifest"',
+            'name="theme-color" content="#6366f1"',
+        ):
+            with self.subTest(needle=needle):
+                self.assertIn(needle, html)
