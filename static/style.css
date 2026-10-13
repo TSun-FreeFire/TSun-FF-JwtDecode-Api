@@ -84,6 +84,13 @@ body {
     display: none !important;
 }
 
+/* The sticky header would otherwise cover anchored / scrolled-to blocks */
+.results-container,
+.error-message,
+.api-card {
+    scroll-margin-top: 84px;
+}
+
 /* App Container */
 .app-container {
     display: flex;
